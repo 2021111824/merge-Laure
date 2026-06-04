@@ -14,8 +14,8 @@ const retryButton = document.getElementById("retryButton");
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
-const DROP_Y = 72;
-const DEADLINE_Y = 126;
+const DROP_Y = 74;
+const DEADLINE_Y = 132;
 const GRAVITY = 0.25;
 const RESTITUTION = 0.18;
 const FRICTION = 0.992;
@@ -506,9 +506,9 @@ function drawScene() {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
   if (!assetsReady) {
-    ctx.fillStyle = "#f7ecdf";
+    ctx.fillStyle = "#efe7ff";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    ctx.fillStyle = "#7d614d";
+    ctx.fillStyle = "#786694";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "bold 28px sans-serif";
