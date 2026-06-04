@@ -21,7 +21,6 @@ const RESTITUTION = 0.18;
 const FRICTION = 0.992;
 const MAX_START_LEVEL = 4;
 const COLLISION_PASSES = 6;
-const ASSET_VERSION = Date.now();
 
 const LEVELS = [
   { name: "第一页", size: 28, color: "#f6d6c2", emoji: "1" },
@@ -60,7 +59,7 @@ async function loadLevelImage(index) {
 
   for (const baseName of candidateNames) {
     for (const extension of IMAGE_EXTENSIONS) {
-      const src = `assets/${baseName}.${extension}?v=${ASSET_VERSION}`;
+      const src = `assets/${baseName}.${extension}`;
       const loaded = await new Promise((resolve) => {
         const image = new Image();
         image.onload = () => resolve(image);
@@ -105,7 +104,7 @@ function renderNextPreview() {
   }
 
   const fallback = document.createElement("span");
-  fallback.textContent = level.emoji;
+  fallback.textContent = "●";
   fallback.style.background = level.color;
   fallback.style.color = nextLevel > 7 ? "#fff5eb" : "#593722";
   nextPreview.appendChild(fallback);
@@ -455,7 +454,7 @@ function drawBody(body) {
     ctx.font = `${Math.round(body.radius * 0.9)}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(level.emoji, body.x, body.y + 1);
+    ctx.fillText("●", body.x, body.y + 1);
   }
 
   ctx.restore();
@@ -514,7 +513,7 @@ function drawScene() {
     ctx.font = "bold 28px sans-serif";
     ctx.fillText("素材加载中...", WIDTH / 2, HEIGHT / 2 - 12);
     ctx.font = "16px sans-serif";
-    ctx.fillText("首次打开会稍等一下", WIDTH / 2, HEIGHT / 2 + 22);
+    ctx.fillText("会在图片准备好后自动开始", WIDTH / 2, HEIGHT / 2 + 22);
     return;
   }
 
