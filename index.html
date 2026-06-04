@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合成散文集</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <p class="eyebrow">Merge Game</p>
+          <h1>合成散文集</h1>
+        </div>
+        <div class="panel__actions">
+          <!-- <button id="previewWinButton" class="button button--ghost" type="button">预览胜利画面</button> -->
+          <button id="restartButton" class="button" type="button">重新开始</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat__label">分数</span>
+          <strong id="scoreValue">0</strong>
+        </div>
+        <div class="stat">
+          <span class="stat__label">最高分</span>
+          <strong id="bestValue">0</strong>
+        </div>
+        <div class="stat stat--next">
+          <span class="stat__label">下一个</span>
+          <div id="nextPreview" class="next-preview"></div>
+        </div>
+      </div>
+
+      <div class="game-wrap">
+        <canvas id="gameCanvas" width="420" height="640" aria-label="合成游戏画布"></canvas>
+        <div id="gameOver" class="game-over hidden">
+          <span id="overlayCelebration" class="game-over__celebration hidden">恭喜通关</span>
+          <div id="overlayPreview" class="overlay-preview hidden"></div>
+          <p id="overlayTitle">游戏结束</p>
+          <span id="overlayMessage" class="game-over__message">再来一局试试。</span>
+          <button id="retryButton" class="button" type="button">再来一局</button>
+        </div>
+      </div>
+
+      <div class="tips">
+        <p>操作：移动鼠标或手指，点击/松开后落下。</p>
+        <p>首次打开会先预加载图片，加载完后再开始游戏。</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
