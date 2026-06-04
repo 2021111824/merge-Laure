@@ -21,6 +21,7 @@ const RESTITUTION = 0.18;
 const FRICTION = 0.992;
 const MAX_START_LEVEL = 4;
 const COLLISION_PASSES = 6;
+const IMAGE_RETRY_LIMIT = 2;
 
 const LEVELS = [
   { name: "第一页", size: 28, color: "#f6d6c2", emoji: "1" },
@@ -46,45 +47,84 @@ let dropLocked = false;
 let gameOver = false;
 let lastSpawnAt = 0;
 let assetsReady = false;
+let assetsFailed = false;
+let loadedAssetCount = 0;
 
 bestValue.textContent = bestScore;
 
-const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "JPG", "JPEG", "PNG", "WEBP"];
 const levelImages = LEVELS.map(() => null);
 
-async function loadLevelImage(index) {
-  const paddedName = String(index + 1).padStart(2, "0");
-  const plainName = String(index + 1);
-  const candidateNames = [plainName, paddedName];
+function loadSingleImage(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
 
-  for (const baseName of candidateNames) {
-    for (const extension of IMAGE_EXTENSIONS) {
-      const src = `assets/${baseName}.${extension}`;
-      const loaded = await new Promise((resolve) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = () => resolve(null);
-        image.src = src;
-      });
+async function loadLevelImage(index, retryCount = IMAGE_RETRY_LIMIT) {
+  const baseName = String(index + 1);
+  const src = `assets/${baseName}.png`;
 
-      if (loaded) {
-        return loaded;
-      }
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    const attemptSrc = attempt === 0 ? src : `${src}?retry=${attempt}`;
+    const loaded = await loadSingleImage(attemptSrc);
+    if (loaded) {
+      return loaded;
     }
   }
 
-  console.warn(`素材 ${plainName} 未能加载，请确认它是真正的 jpg/png/webp 图片，而不是改了扩展名的其他格式。`);
+  console.warn(`素材 ${baseName}.png 未能加载，请检查文件是否存在或网络是否稳定。`);
   return null;
 }
 
-Promise.all(LEVELS.map((_, index) => loadLevelImage(index))).then((results) => {
-  for (let i = 0; i < results.length; i += 1) {
-    levelImages[i] = results[i];
+function beginAssetLoad() {
+  assetsReady = false;
+  assetsFailed = false;
+  loadedAssetCount = 0;
+  nextPreview.innerHTML = "";
+  for (let i = 0; i < levelImages.length; i += 1) {
+    levelImages[i] = null;
   }
-  assetsReady = true;
-  restartGame();
-  renderNextPreview();
-});
+
+  Promise.all(
+    LEVELS.map((_, index) =>
+      loadLevelImage(index).then((image) => {
+        if (image) {
+          loadedAssetCount += 1;
+        }
+        return image;
+      })
+    )
+  ).then((results) => {
+    const hasFailure = results.some((image) => !image);
+    if (hasFailure) {
+      assetsFailed = true;
+      return;
+    }
+
+    for (let i = 0; i < results.length; i += 1) {
+      levelImages[i] = results[i];
+    }
+
+    assetsReady = true;
+    restartGame();
+    renderNextPreview();
+  });
+}
+
+beginAssetLoad();
+
+function getLevelImage(levelIndex) {
+  const image = levelImages[levelIndex];
+  if (image && image.complete && image.naturalWidth > 0) {
+    return image;
+  }
+
+  return null;
+}
 
 function randomStartLevel() {
   return Math.floor(Math.random() * MAX_START_LEVEL);
@@ -92,13 +132,13 @@ function randomStartLevel() {
 
 function renderNextPreview() {
   const level = LEVELS[nextLevel];
-  const image = levelImages[nextLevel];
+  const image = getLevelImage(nextLevel);
   nextPreview.innerHTML = "";
 
-  if (image && image.complete && image.naturalWidth > 0) {
+  if (image) {
     const img = document.createElement("img");
     img.src = image.src;
-    img.alt = level.name;
+    img.alt = LEVELS[nextLevel].name;
     nextPreview.appendChild(img);
     return;
   }
@@ -139,6 +179,9 @@ function spawnBody() {
 
 function restartGame() {
   if (!assetsReady) {
+    if (assetsFailed) {
+      beginAssetLoad();
+    }
     return;
   }
 
@@ -195,9 +238,9 @@ function onDrop() {
 
 function renderOverlayPreview(levelIndex) {
   overlayPreview.innerHTML = "";
-  const image = levelImages[levelIndex];
+  const image = getLevelImage(levelIndex);
 
-  if (image && image.complete && image.naturalWidth > 0) {
+  if (image) {
     const img = document.createElement("img");
     img.src = image.src;
     img.alt = LEVELS[levelIndex].name;
@@ -431,7 +474,7 @@ function updateGameState() {
 
 function drawBody(body) {
   const level = LEVELS[body.level];
-  const image = levelImages[body.level];
+  const image = getLevelImage(body.level);
 
   ctx.save();
   ctx.beginPath();
@@ -439,7 +482,7 @@ function drawBody(body) {
   ctx.closePath();
   ctx.clip();
 
-  if (image && image.complete && image.naturalWidth > 0) {
+  if (image) {
     ctx.drawImage(
       image,
       body.x - body.radius,
@@ -511,9 +554,17 @@ function drawScene() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "bold 28px sans-serif";
-    ctx.fillText("素材加载中...", WIDTH / 2, HEIGHT / 2 - 12);
+    ctx.fillText(assetsFailed ? "素材加载失败" : "素材加载中...", WIDTH / 2, HEIGHT / 2 - 12);
     ctx.font = "16px sans-serif";
-    ctx.fillText("会在图片准备好后自动开始", WIDTH / 2, HEIGHT / 2 + 22);
+    ctx.fillText(
+      assetsFailed ? "点击“重新开始”可重试加载" : "会在图片准备好后自动开始",
+      WIDTH / 2,
+      HEIGHT / 2 + 22
+    );
+    if (!assetsFailed) {
+      ctx.font = "14px sans-serif";
+      ctx.fillText(`已加载 ${loadedAssetCount}/${LEVELS.length}`, WIDTH / 2, HEIGHT / 2 + 48);
+    }
     return;
   }
 
