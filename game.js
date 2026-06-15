@@ -41,6 +41,7 @@ let score = 0;
 let bestScore = Number(localStorage.getItem("essay-merge-best") || 0);
 let bodies = [];
 let effects = [];
+let currentLevel = randomStartLevel();
 let nextLevel = randomStartLevel();
 let currentX = WIDTH / 2;
 let dropLocked = false;
@@ -168,9 +169,10 @@ function createBody(level, x, y) {
 }
 
 function spawnBody() {
-  const radius = LEVELS[nextLevel].size;
+  const radius = LEVELS[currentLevel].size;
   const x = clamp(currentX, radius + 8, WIDTH - radius - 8);
-  bodies.push(createBody(nextLevel, x, DROP_Y));
+  bodies.push(createBody(currentLevel, x, DROP_Y));
+  currentLevel = nextLevel;
   nextLevel = randomStartLevel();
   renderNextPreview();
   lastSpawnAt = performance.now();
@@ -188,6 +190,7 @@ function restartGame() {
   score = 0;
   bodies = [];
   effects = [];
+  currentLevel = randomStartLevel();
   nextLevel = randomStartLevel();
   currentX = WIDTH / 2;
   dropLocked = false;
@@ -514,7 +517,7 @@ function drawAimingPiece() {
     return;
   }
 
-  const level = LEVELS[nextLevel];
+  const level = LEVELS[currentLevel];
   const radius = level.size;
   const x = clamp(currentX, radius + 8, WIDTH - radius - 8);
 
@@ -528,7 +531,7 @@ function drawAimingPiece() {
   ctx.restore();
 
   ctx.globalAlpha = 0.78;
-  drawBody({ x, y: DROP_Y, radius, level: nextLevel });
+  drawBody({ x, y: DROP_Y, radius, level: currentLevel });
   ctx.globalAlpha = 1;
 }
 
